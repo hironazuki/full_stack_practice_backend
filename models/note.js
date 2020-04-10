@@ -1,15 +1,6 @@
 const mongoose = require('mongoose')
 
 mongoose.set('useFindAndModify', false)
-const url = process.env.MONGODB_URI
-
-mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(result => {
-    console.log('connected to MongoDB')
-  })
-  .catch((error) => {
-    console.log('error connecting to MongoDB:', error.message)
-  })
 
 const noteSchema = new mongoose.Schema({
   content: {
@@ -19,9 +10,13 @@ const noteSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    required: true
+    // required: true
   },
-  important: Boolean
+  important: Boolean,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 })
 
 noteSchema.set('toJSON', {
