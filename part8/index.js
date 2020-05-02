@@ -122,10 +122,13 @@ const resolvers = {
       return person
     },
     editNumber: async (root, args) => {
-      const person = await Person.findOne({ name: args.name })
-      person.phone = args.phone
+      // const person = await Person.findOne({ name: args.name })
+      // person.phone = args.phone
 
       try {
+        const person = await Person.findOne({ name: args.name })
+        person.phone = args.phone
+
         await person.save()
       } catch (error) {
         throw new UserInputError(error.message, {
