@@ -15,7 +15,7 @@ const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY'
 
 console.log('connecting to', MONGODB_URI)
 
-mongoose.connect(MONGODB_URI, { useNewUrlParser: true })
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
     console.log('connected to MongoDB')
   })
@@ -28,6 +28,7 @@ const typeDefs = gql`
     name: String!
     phone: String
     address: Address!
+    friendOf: [User!]!
     id: ID!
   }
   type Address {
@@ -74,7 +75,14 @@ const typeDefs = gql`
       name: String!
     ): User
   }
+
+  type Subscription {
+    personAdded: Person!
+  }
 `
+
+const { PubSub } = require('apollo-server')
+const pubsub = new PubSub()
 
 const resolvers = {
   Query: {
@@ -97,6 +105,14 @@ const resolvers = {
         street: root.street,
         city: root.city
       }
+    },
+    friendOf: async (root) => {
+      const friends = await User.find({
+        friends: {
+          $in: [root.id]
+        }
+      })
+      return friends
     }
   },
   Mutation: {
@@ -118,6 +134,8 @@ const resolvers = {
           invalidArgs: args,
         })
       }
+
+      pubsub.publish('PERSON_ADDED', { personAdded: person })
 
       return person
     },
@@ -178,8 +196,13 @@ const resolvers = {
       await currentUser.save()
 
       return currentUser
-    },
-  }
+    }
+  },
+  Subscription: {
+    personAdded: {
+      subscribe: () => pubsub.asyncIterator(['PERSON_ADDED'])
+    }
+  },
 }
 
 const server = new ApolloServer({
@@ -200,6 +223,7 @@ const server = new ApolloServer({
   }
 })
 
-server.listen().then(({ url }) => {
+server.listen().then(({ url, subscriptionsUrl }) => {
   console.log(`Server ready at ${url}`)
+  console.log(`Subscriptions ready at ${subscriptionsUrl}`)
 })
